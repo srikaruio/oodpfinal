@@ -1,5 +1,18 @@
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SOCKET int
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#define closesocket close
+#endif
+
 #include "../include/sqlite3.h"
 #include <iostream>
 #include <vector>
@@ -7,8 +20,6 @@
 #include <sstream>
 #include <ctime>
 #include "../include/json.hpp"
-
-#pragma comment(lib, "ws2_32.lib")
 
 using json = nlohmann::json;
 
@@ -139,10 +150,17 @@ public:
 class SimpleServer {
     int port;
 public:
-    SimpleServer(int p) : port(p) { WSADATA wsa; WSAStartup(MAKEWORD(2, 2), &wsa); }
+    SimpleServer(int p) : port(p) {
+#ifdef _WIN32
+        WSADATA wsa; WSAStartup(MAKEWORD(2, 2), &wsa);
+#endif
+    }
     void start() {
         SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
-        sockaddr_in addr = { AF_INET, htons(port), INADDR_ANY };
+        sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        addr.sin_addr.s_addr = INADDR_ANY;
         bind(s, (sockaddr*)&addr, sizeof(addr));
         listen(s, 10);
         std::cout << "Hostel Backend Connected to New UI - Port " << port << std::endl;

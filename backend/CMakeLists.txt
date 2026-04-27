@@ -9,8 +9,10 @@ add_executable(server src/server.cpp include/sqlite3.c)
 
 target_include_directories(server PRIVATE include)
 
-# Link Windows Sockets
-target_link_libraries(server PRIVATE ws2_32)
+# Link Windows Sockets conditionally
+if(WIN32)
+    target_link_libraries(server PRIVATE ws2_32)
+endif()
 
 if(MSVC)
     target_compile_options(server PRIVATE /W3 /EHsc)
