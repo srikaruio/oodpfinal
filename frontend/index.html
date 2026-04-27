@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HostelAdmin | Premium Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="fas fa-h-square"></i></div>
+      <div class="brand-name">HostelAdmin</div>
+    </div>
+
+    <ul class="nav-list">
+      <li class="nav-link active" onclick="showSection('dashboard', this)">
+        <i class="fas fa-chart-pie"></i><span>Overview</span>
+      </li>
+      <li class="nav-link" onclick="showSection('students', this)">
+        <i class="fas fa-user-graduate"></i><span>Students</span>
+      </li>
+      <li class="nav-link" onclick="showSection('rooms', this)">
+        <i class="fas fa-door-closed"></i><span>Inventory</span>
+      </li>
+      <li class="nav-link" onclick="showSection('fees', this)">
+        <i class="fas fa-wallet"></i><span>Financials</span>
+      </li>
+      <li class="nav-link" onclick="showSection('complaints', this)">
+        <i class="fas fa-inbox"></i><span>Support</span>
+      </li>
+      <li class="nav-link" onclick="showSection('system', this)">
+        <i class="fas fa-microchip"></i><span>Infrastructure</span>
+      </li>
+    </ul>
+
+    <div class="sidebar-profile">
+      <div class="profile-card">
+        <div class="profile-img">AD</div>
+        <div class="profile-info">
+          <div style="font-size: 13px; font-weight: 700;">Admin Console</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Warden Hub</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 class="section-title" id="section-title">Overview Control</h2>
+      </div>
+      
+      <div class="topbar-right">
+        <div class="search-bar">
+          <i class="fas fa-magnifying-glass"></i>
+          <input type="text" id="globalSearch" placeholder="Search..." oninput="filterStudents()" />
+        </div>
+        
+        <button class="btn btn-outline" id="themeToggle" onclick="toggleTheme()" style="padding: 10px;">
+          <i class="fas fa-moon"></i>
+        </button>
+
+        <div id="currentTime" style="font-weight: 600; font-size: 13px; color: var(--text-muted);"></div>
+        <div id="syncIndicator" style="width: 8px; height: 8px; border-radius: 50%; background: var(--success); opacity: 0; transition: opacity 0.3s;"></div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- DASHBOARD -->
+      <section class="section active" id="section-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-value" id="dash-students">0</div>
+            <div class="stat-label">Students</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="color: var(--success);"><i class="fas fa-bed"></i></div>
+            <div class="stat-value" id="dash-rooms">0</div>
+            <div class="stat-label">Available Units</div>
+            <div style="margin-top: 12px; height: 6px; background: var(--bg-accent); border-radius: 3px; overflow: hidden;">
+              <div id="occupancy-progress" style="width: 0%; height: 100%; background: var(--success); transition: width 1s ease-out;"></div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="color: var(--warning);"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-value" id="dash-fees">₹0</div>
+            <div class="stat-label">Fees Due</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="color: var(--error);"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="stat-value" id="dash-complaints">0</div>
+            <div class="stat-label">Tickets</div>
+          </div>
+        </div>
+
+        <!-- ANALYTICS ROW -->
+        <div class="dashboard-row" style="margin-top: 24px;">
+          <div class="panel">
+            <h3 style="margin-bottom: 24px;"><i class="fas fa-chart-line" style="margin-right: 10px; color: var(--primary);"></i>Resident Growth & Fees</h3>
+            <div style="height: 300px; width: 100%; position: relative;">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
+          <div class="panel">
+            <h3 style="margin-bottom: 24px;"><i class="fas fa-chart-pie" style="margin-right: 10px; color: var(--success);"></i>Room Distribution</h3>
+            <div style="height: 300px; width: 100%; position: relative;">
+              <canvas id="distributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-row">
+          <div class="panel">
+            <h3 style="margin-bottom: 24px;">Activity Feed</h3>
+            <div id="activity-feed"></div>
+          </div>
+          <div class="panel">
+            <h3 style="margin-bottom: 24px;"><i class="fas fa-bolt" style="margin-right: 10px; color: var(--warning);"></i>Quick Actions</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <button class="btn btn-primary" onclick="openModal('modal-add-student')"><i class="fas fa-plus"></i> New Student</button>
+              <button class="btn btn-outline" onclick="sync()"><i class="fas fa-sync"></i> Force Refresh</button>
+              
+              <div style="margin-top: 24px; padding: 20px; background: var(--primary-soft); border-radius: 16px; border: 1px solid var(--primary-glow);">
+                <div style="font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 12px;">Occupancy Insight</div>
+                <div style="font-size: 12px; line-height: 1.6; color: var(--text-muted);" id="occupancy-insight">
+                  Calculating real-time occupancy metrics...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STUDENTS -->
+      <section class="section" id="section-students">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h2>Resident Directory</h2>
+          <button class="btn btn-primary" onclick="openModal('modal-add-student')"><i class="fas fa-plus"></i> Add Resident</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Course</th><th>Room</th><th>Due</th><th>Actions</th></tr></thead>
+            <tbody id="student-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ROOMS -->
+      <section class="section" id="section-rooms">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h2>Inventory Status</h2>
+          <button class="btn btn-primary" onclick="openModal('modal-add-room')"><i class="fas fa-plus"></i> Add Room</button>
+        </div>
+        <div class="rooms-container" id="room-grid"></div>
+      </section>
+
+      <!-- FEES -->
+      <section class="section" id="section-fees">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h2>Financial Ledger</h2>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>SID</th><th>Name</th><th>Date</th><th>Amount</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="fee-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- COMPLAINTS -->
+      <section class="section" id="section-complaints">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h2>Support Hub</h2>
+          <button class="btn btn-primary" onclick="openModal('modal-add-complaint')"><i class="fas fa-paper-plane"></i> File Ticket</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>ID</th><th>Reporter</th><th>Date</th><th>Issue</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="complaint-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- INFRASTRUCTURE -->
+      <section class="section" id="section-system">
+        <h2>System Architecture</h2>
+        <div class="panel" style="margin-top: 24px; max-width: 600px;">
+          <p><strong>Backend:</strong> C++ Performance REST API</p>
+          <p><strong>Database:</strong> CSV Persistence Engine</p>
+          <p><strong>Version:</strong> Elite Console v4.2</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- MODALS -->
+  <div class="modal-backdrop" id="modal-add-student">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 24px;">New Registration</h3>
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="s-name" placeholder="John Doe">
+      </div>
+      <div class="input-group">
+        <label>Contact</label>
+        <input type="text" id="s-phone" placeholder="+91...">
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="s-email" placeholder="john@example.com">
+      </div>
+      <div class="input-group">
+        <label>Course</label>
+        <input type="text" id="s-course" placeholder="B.Tech">
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-add-student')">Cancel</button>
+        <button class="btn btn-primary" style="flex: 1;" onclick="addStudent()">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-view-student">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 24px;">Resident Profile</h3>
+      <div id="student-profile-body"></div>
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="btn btn-outline" style="flex: 1; color: var(--error);" id="delete-student-btn" onclick="deleteStudent()">Delete</button>
+        <button class="btn btn-primary" style="flex: 1;" id="open-allocate-btn" onclick="openAllocateModal()">Allot Room</button>
+        <button class="btn btn-outline" onclick="closeModal('modal-view-student')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-allocate-room">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 24px;">Room Allocation</h3>
+      <div id="alloc-student-name" style="margin-bottom: 20px; font-weight: 700;"></div>
+      <input type="hidden" id="alloc-student-id">
+      <div class="input-group">
+        <label>Select Room</label>
+        <select id="room-select-dropdown"></select>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-allocate-room')">Cancel</button>
+        <button class="btn btn-primary" style="flex: 1;" onclick="allotRoom()">Allocate</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-add-room">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 24px;">Add New Room</h3>
+      <div class="input-group">
+        <label>Room Number</label>
+        <input type="text" id="r-num" placeholder="D1">
+      </div>
+      <div class="input-group">
+        <label>Block</label>
+        <input type="text" id="r-block" placeholder="D">
+      </div>
+      <div class="input-group">
+        <label>Type</label>
+        <select id="r-type">
+            <option value="0">Single</option>
+            <option value="1">Double</option>
+            <option value="2">Triple</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Rent (Per Month)</label>
+        <input type="number" id="r-rent" placeholder="3000">
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-add-room')">Cancel</button>
+        <button class="btn btn-primary" style="flex: 1;" onclick="addRoom()">Add Room</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="modal-backdrop" id="modal-add-complaint">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 24px;">New Ticket</h3>
+      <div class="input-group">
+        <label>Student</label>
+        <select id="complaint-student-select"></select>
+      </div>
+      <div class="input-group">
+        <label>Description</label>
+        <textarea id="c-desc" rows="3"></textarea>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-add-complaint')">Cancel</button>
+        <button class="btn btn-primary" style="flex: 1;" onclick="addComplaint()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-box" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
