@@ -173,9 +173,32 @@ public:
             if (bytesReceived <= 0) { closesocket(client); continue; }
             
             std::string req(buffer, bytesReceived);
-            std::string body = "{}";
+            
+            size_t headerEnd = req.find("\r\n\r\n");
+            if (headerEnd != std::string::npos) {
+                std::string headers = req.substr(0, headerEnd);
+                for (char& c : headers) c = tolower(c);
+                size_t clPos = headers.find("\r\ncontent-length: ");
+                if (clPos == std::string::npos) clPos = headers.find("content-length: ") == 0 ? 0 : std::string::npos;
+                
+                if (clPos != std::string::npos) {
+                    size_t valPos = clPos + (headers[clPos] == '\r' ? 18 : 16);
+                    size_t clEnd = headers.find("\r\n", valPos);
+                    if (clEnd != std::string::npos) {
+                        int contentLength = std::stoi(headers.substr(valPos, clEnd - valPos));
+                        int currentBodyLength = req.length() - (headerEnd + 4);
+                        while (currentBodyLength < contentLength) {
+                            int r = recv(client, buffer, 16384, 0);
+                            if (r <= 0) break;
+                            req.append(buffer, r);
+                            currentBodyLength += r;
+                        }
+                    }
+                }
+            }
 
-            if (req.find("OPTIONS") != std::string::npos) { body = ""; } 
+            std::string body = "{}";
+            if (req.find("OPTIONS ") == 0) { body = ""; } 
             else if (req.find("GET /api/dashboard") != std::string::npos) body = controller.getDashboard();
             else if (req.find("GET /api/students") != std::string::npos) body = controller.getStudents();
             else if (req.find("GET /api/rooms") != std::string::npos) body = controller.getRooms();
@@ -260,7 +283,7 @@ public:
                 } catch (...) { body = "{\"status\":\"error\"}"; }
             }
 
-            std::string header = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: *\r\nAccess-Control-Allow-Headers: *\r\nConnection: close\r\n\r\n";
+            std::string header = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, POST, DELETE, OPTIONS, PUT\r\nAccess-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept\r\nConnection: close\r\n\r\n";
             std::string response = header + body;
             send(client, response.c_str(), (int)response.length(), 0);
             closesocket(client);
@@ -268,7 +291,11 @@ public:
     }
 };
 
+#include <cstdlib>
+
 int main() {
-    SimpleServer(8080).start();
+    const char* env_p = std::getenv("PORT");
+    int port = env_p ? std::stoi(env_p) : 8080;
+    SimpleServer(port).start();
     return 0;
 }
